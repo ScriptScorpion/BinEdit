@@ -6,17 +6,16 @@
 #ifdef _WIN32
     #include <conio.h>
     #include <windows.h>
-    void enable() {
-        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-        DWORD mode;
-        GetConsoleMode(hStdin, &mode);
-        SetConsoleMode(hStdin, mode & ~ENABLE_ECHO_INPUT);
-    }
-    void disable() {
-        HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
-        DWORD mode;
-        GetConsoleMode(hStdin, &mode);
-        SetConsoleMode(hStdin, mode | ENABLE_ECHO_INPUT);
+    void enable(bool state) {
+        if (state) {
+            static HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
+            static DWORD mode;
+            GetConsoleMode(hStdin, &mode);
+            SetConsoleMode(hStdin, mode & ~ENABLE_ECHO_INPUT);
+        }
+        else {
+            SetConsoleMode(hStdin, mode | ENABLE_ECHO_INPUT);
+        }
     }
 
 #else
@@ -46,17 +45,18 @@
         ioctl(STDIN, FIONREAD, &bytesWaiting);
         return bytesWaiting > 0;
     }
-    void enable() {
+    void enable(bool state) {
         static termios oldt, newt;
-        tcgetattr(STDIN_FILENO, &oldt);
-        newt = oldt;
-        newt.c_lflag &= ~(ICANON | ECHO);
-        tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        if (state) {
+            tcgetattr(STDIN_FILENO, &oldt);
+            newt = oldt;
+            newt.c_lflag &= ~(ICANON | ECHO);
+            tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+        }
+        else {
+            tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+        }
 
-    }
-    void disable() {
-        static termios oldt;
-        tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     }
 #endif
 void parse(std::string &insiders, std::string &word, const int key, bool &edit, int &index) {
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]) {
     int iteration = 0;
     int bit_i = 0;
     std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file\n";
-    enable();
+    enable(true);
     while (true) {
         iteration++;
         if (_kbhit()) {
@@ -191,6 +191,6 @@ int main(int argc, char *argv[]) {
             }
         }
     }
-    disable();
+    enable(false);
     return 0;
 }
