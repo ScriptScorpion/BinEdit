@@ -116,80 +116,80 @@ int main(int argc, char *argv[]) {
     enable();
     while (true) {
         iteration++;
-        //if (_kbhit()) {
-        key = _getch();
-        if (edit) {
-            if (is_first) {
-                is_first = false;
-            }
-            std::cout << "Entered bits: ";
-            std::cout << (char)key;
-            if ((key == 48 || key == 49) && insiders[index] != ' ') {
-                insiders[index] = (char)key;
-                word[bit_i] = (char)key;
-                index++;
-                bit_i++;
-                std::cout << '\n' << word << " " << static_cast<char>(std::stoi(word, nullptr, 2)) << '\n';
-            }
-            else {
-                std::cout << "\n\nEditing finished\n";
-                std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file" << std::endl;
-                edit = false;
-                word = "";
-                bit_i = 0;
-            }
-        }
-        else if (key == 115) {
-            word = "";
-            while (insiders[index] != ' ') {
-                std::cout << insiders[index];
-                word += insiders[index];
-                index++;
-            }
-            std::cout << ' ' << std::endl;
-            index++;
-        }
-        else if (key == 101) {
-            edit = true;
-            std::cout << " \nEntered editing mode\n";
-            std::cout << "(Press 1 or 0 to edit bits)\n\n";
-            index_tmp = index;
-            while (insiders[index_tmp] != ' ') {
-                word += insiders[index_tmp];
-                index_tmp++;
-            }
-            std::cout << "Current value: " << word << '\n';
-            if (is_first || iteration == 2) {
-                index = 0;
-                continue;
-            }
-            else {
-                index -= 2;
-                while (insiders[index] != ' ') {
-                    index--;
+        if (_kbhit()) {
+            key = _getch();
+            if (edit) {
+                if (is_first) {
+                    is_first = false;
                 }
-                index++;
-                continue;
-            }
-        }
-        else if (key == 97) {
-            for (char x : insiders) {
-                if (isspace(x)) {
-                    std::cout << " ";
+                std::cout << "Entered bits: ";
+                std::cout << (char)key;
+                if ((key == 48 || key == 49) && insiders[index] != ' ') {
+                    insiders[index] = (char)key;
+                    word[bit_i] = (char)key;
+                    index++;
+                    bit_i++;
+                    std::cout << '\n' << word << " " << static_cast<char>(std::stoi(word, nullptr, 2)) << '\n';
                 }
                 else {
-                    std::cout << x;
+                    std::cout << "\n\nEditing finished\n";
+                    std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file" << std::endl;
+                    edit = false;
+                    word = "";
+                    bit_i = 0;
                 }
             }
-            std::cout << std::endl;
-            break;
+            else if (key == 115) {
+                word = "";
+                while (insiders[index] != ' ') {
+                    std::cout << insiders[index];
+                    word += insiders[index];
+                    index++;
+                }
+                std::cout << ' ' << std::endl;
+                index++;
+            }
+            else if (key == 101) {
+                edit = true;
+                std::cout << " \nEntered editing mode\n";
+                std::cout << "(Press 1 or 0 to edit bits)\n\n";
+                index_tmp = index;
+                while (insiders[index_tmp] != ' ') {
+                    word += insiders[index_tmp];
+                    index_tmp++;
+                }
+                std::cout << "Current value: " << word << '\n';
+                if (is_first || iteration == 2) {
+                    index = 0;
+                    continue;
+                }
+                else {
+                    index -= 2;
+                    while (insiders[index] != ' ') {
+                        index--;
+                    }
+                    index++;
+                    continue;
+                }
+            }
+            else if (key == 97) {
+                for (char x : insiders) {
+                    if (isspace(x)) {
+                        std::cout << " ";
+                    }
+                    else {
+                        std::cout << x;
+                    }
+                }
+                std::cout << std::endl;
+                break;
+            }
+            else if (key == 119) {
+                write_to_file(insiders, argv[1]);
+                std::cout << "File overwrited successfully" << std::endl;
+                break;
+            }
         }
-        else if (key == 119) {
-            write_to_file(insiders, argv[1]);
-            std::cout << "File overwrited successfully" << std::endl;
-            break;
-        }
-        //}
     }
     disable();
     return 0;
