@@ -57,6 +57,13 @@
 
     }
 #endif
+
+void out_of_the_bounds(const char val) {
+    if (val == '\0') {
+        enable(false);
+        std::exit(1);
+    }
+}
 void parse(std::string &insiders, std::string &word, const int key, bool &edit, int &index) {
     std::cout << '\n' << word << std::endl;
     int bit_i = 0;
@@ -113,6 +120,7 @@ int main(int argc, char *argv[]) {
     enable(true);
     while (true) {
         if (_kbhit()) {
+            out_of_the_bounds(insiders[index]);
             iteration++;
             key = _getch();
             if (edit) {
@@ -144,7 +152,7 @@ int main(int argc, char *argv[]) {
                         word += insiders[index];
                         index++;
                     }
-                    std::cout << ' ' << std::endl;
+                    std::cout << ' ' << static_cast<char>(std::stoi(word, nullptr, 2)) << std::endl;
                     index++;
                 }
                 else if (key == 101) { // e
