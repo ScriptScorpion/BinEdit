@@ -44,7 +44,7 @@
 void out_of_the_bounds(const char val) {
     if (val == '\0') {
         enable(false);
-        std::exit(1);
+        std::exit(0);
     }
 }
 void parse(std::string &insiders, std::string &word, const int key, bool &edit, int &index) {
