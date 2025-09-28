@@ -6,7 +6,7 @@
 #ifdef _WIN32
     #include <conio.h>
     #include <windows.h>
-    void enable(bool state) {
+    void enable(const bool state) {
         if (state) {
             static HANDLE hStdin = GetStdHandle(STD_INPUT_HANDLE);
             static DWORD mode;
@@ -26,24 +26,7 @@
         ch = getchar();
         return ch;
     }
-    int _kbhit() {
-        static const int STDIN = 0;
-        static bool initialized = false;
-    
-        if (!initialized) {
-            termios term;
-            tcgetattr(STDIN, &term);
-            term.c_lflag &= ~ICANON;
-            tcsetattr(STDIN, TCSANOW, &term);
-            setbuf(stdin, NULL);
-            initialized = true;
-        }
-    
-        int bytesWaiting;
-        ioctl(STDIN, FIONREAD, &bytesWaiting);
-        return bytesWaiting > 0;
-    }
-    void enable(bool state) {
+    void enable(const bool state) {
         static termios oldt, newt;
         if (state) {
             tcgetattr(STDIN_FILENO, &oldt);
@@ -95,11 +78,11 @@ void write_to_file(std::string &insiders, const char *filename) {
     output.close();
 }
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cout << "Only 2 arguments, example: " << argv[0] << " <file.exe>" << std::endl;
+    std::ifstream file(argv[1], std::ios::binary);
+    if (argc != 2 || !file.good()) {
+        std::cout << "Only 2 arguments, example: " << argv[0] << " <file>" << std::endl;
         return 0;
     }
-    std::ifstream file(argv[1], std::ios::binary);
     std::string insiders = "";
     std::string word = "";
     unsigned char byte;
@@ -118,94 +101,92 @@ int main(int argc, char *argv[]) {
     int bit_i = 0;
     std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file\n";
     enable(true);
-    while (true) {
-        if (_kbhit()) {
-            out_of_the_bounds(insiders[index]);
-            iteration++;
-            key = _getch();
-            if (edit) {
-                std::cout << "Entered bits: ";
-                std::cout << (char)key;
-                if ((key == 48 || key == 49) && insiders[index] != ' ') {
-                    insiders[index] = (char)key;
-                    word[bit_i] = (char)key;
-                    index++;
-                    bit_i++;
-                    std::cout << '\n' << word << " " << static_cast<char>(std::stoi(word, nullptr, 2)) << '\n';
-                }
-                else {
-                    std::cout << "\n\nEditing finished\n";
-                    std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file" << std::endl;
-                    edit = false;
-                    word = "";
-                    bit_i = 0;
-                }
+    while (true) { 
+        out_of_the_bounds(insiders[index]);
+        iteration++;
+        key = _getch();
+        if (edit) {
+            std::cout << "Entered bits: ";
+            std::cout << (char)key;
+            if ((key == 48 || key == 49) && insiders[index] != ' ') {
+                insiders[index] = (char)key;
+                word[bit_i] = (char)key;
+                index++;
+                bit_i++;
+                std::cout << '\n' << word << " " << static_cast<char>(std::stoi(word, nullptr, 2)) << '\n';
             }
             else {
-                if (key == 115) { // s
-                    if (iteration == 2) {
-                        is_first = false;
-                    }
-                    word = "";
-                    while (insiders[index] != ' ') {
-                        std::cout << insiders[index];
-                        word += insiders[index];
-                        index++;
-                    }
-                    std::cout << ' ' << static_cast<char>(std::stoi(word, nullptr, 2)) << std::endl;
+                std::cout << "\n\nEditing finished\n";
+                std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file" << std::endl;
+                edit = false;
+                word = "";
+                bit_i = 0;
+            }
+        }
+        else {
+            if (key == 115) { // s
+                if (iteration == 2) {
+                    is_first = false;
+                }
+                word = "";
+                while (insiders[index] != ' ') {
+                    std::cout << insiders[index];
+                    word += insiders[index];
                     index++;
                 }
-                else if (key == 101) { // e
-                    edit = true;
-                    word = ""; 
-                    std::cout << " \nEntered editing mode\n";
-                    std::cout << "(Press 1 or 0 to edit bits)\n\n";
-                    if (is_first) {
-                        is_first = false;
-                        index_tmp = 0;
-                        while (insiders[index_tmp] != ' ') {
-                            word += insiders[index_tmp];
-                            index_tmp++;
-                        }
-                        std::cout << "Current value: " << word << '\n';
-                        continue;
+                std::cout << ' ' << static_cast<char>(std::stoi(word, nullptr, 2)) << std::endl;
+                index++;
+            }
+            else if (key == 101) { // e
+                edit = true;
+                word = ""; 
+                std::cout << " \nEntered editing mode\n";
+                std::cout << "(Press 1 or 0 to edit bits)\n\n";
+                if (is_first) {
+                    is_first = false;
+                    index_tmp = 0;
+                    while (insiders[index_tmp] != ' ') {
+                        word += insiders[index_tmp];
+                        index_tmp++;
                     }
-                    else {
-                        index -= 2;
-                        while (insiders[index] != ' ') {
-                            index--;
-                        }
-                        index++;
-                        index_tmp = index;
-                        while (insiders[index_tmp] != ' ') {
-                            word += insiders[index_tmp];
-                            index_tmp++;
-                        }
-                        std::cout << "Current value: " << word << '\n';
-                        continue;
-                    }
-                }
-                else if (key == 97) { // a
-                    for (char x : insiders) {
-                        if (isspace(x)) {
-                            std::cout << " ";
-                        }
-                        else {
-                            std::cout << x;
-                        }
-                    }
-                    std::cout << std::endl;
-                    break;
-                }
-                else if (key == 119) { // w
-                    write_to_file(insiders, argv[1]);
-                    std::cout << "File overwrited successfully" << std::endl;
-                    break;
-                }
-                else {
-                    std::cout << "\nInvalid command\n";
+                    std::cout << "Current value: " << word << '\n';
                     continue;
                 }
+                else {
+                    index -= 2;
+                    while (insiders[index] != ' ') {
+                        index--;
+                    }
+                    index++;
+                    index_tmp = index;
+                    while (insiders[index_tmp] != ' ') {
+                        word += insiders[index_tmp];
+                        index_tmp++;
+                    }
+                    std::cout << "Current value: " << word << '\n';
+                    continue;
+                }
+            }
+            else if (key == 97) { // a
+                for (char x : insiders) {
+                    if (isspace(x)) {
+                        std::cout << " ";
+                    }
+                    else {
+                        std::cout << x;
+                    }
+                }
+                std::cout << std::endl;
+                break;
+            }
+            else if (key == 119) { // w
+                write_to_file(insiders, argv[1]);
+                std::cout << "File overwrited successfully" << std::endl;
+                break;
+            }
+            else {
+                std::cout << "\nInvalid command\n";
+                break;
             }
         }
     }
