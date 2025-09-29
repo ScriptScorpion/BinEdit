@@ -47,25 +47,6 @@ void out_of_the_bounds(const char val) {
         std::exit(0);
     }
 }
-void parse(std::string &insiders, std::string &word, const int key, bool &edit, int &index) {
-    std::cout << '\n' << word << std::endl;
-    int bit_i = 0;
-    std::cout << "Enter bits: ";
-    std::cout << (char)key;
-    if ((key == 48 || key == 49) && insiders[index] != ' ') {
-        insiders[index] = (char)key;
-        word[bit_i] = (char)key;
-        index++;
-        bit_i++;
-    }
-    else {
-        std::cout << "\n Editing finished \n";
-        std::cout << "press 's' to see a bits, press 'e' to edit this bits" << std::endl;
-        edit = false;
-        word = "";
-        bit_i = 0;
-    }
-}
 void write_to_file(std::string &insiders, const char *filename) {
     std::ofstream output(filename, std::ios::binary);
     std::istringstream iss(insiders);
