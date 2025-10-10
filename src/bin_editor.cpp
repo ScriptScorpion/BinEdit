@@ -1,5 +1,7 @@
 #include <iostream>
 #include <cstdlib>
+#include <cctype>
+#include <filesystem>
 #include <fstream>
 #include <bitset>
 #include <sstream>
@@ -58,12 +60,38 @@ void write_to_file(std::string &insiders, const char *filename) {
     }
     output.close();
 }
+unsigned int show_all(const std::string arg) {
+    unsigned int counter = 0;
+    for (const char c : arg) {
+        if (c == ' ') {
+            counter++;
+        }
+    }
+    return counter;
+}
+std::string remove_special_chars(const std::string name) {
+    std::string name_copy;
+    name_copy.reserve(name.length());
+    for (const char c : name) {
+        if (std::isalnum(c)) {
+            name_copy += c;
+        }
+    }
+    return name_copy;
+}
 int main(int argc, char *argv[]) {
     std::ifstream file(argv[1], std::ios::binary);
     if (argc != 2 || !file.good()) {
-        std::cout << "Only 2 arguments, example: " << argv[0] << " <file>" << std::endl;
-        return 0;
+        std::cerr << "Only 2 arguments, example: " << argv[0] << " <file>" << std::endl;
+        return 1;
     }
+    std::filesystem::path file_ext1(argv[0]);
+    std::filesystem::path file_ext2(argv[1]);
+    if (remove_special_chars(file_ext1.replace_extension("").string()) == file_ext2.string()) {
+        std::cerr << "Error: incorrect input file" << std::endl;
+        return 1;
+    }
+
     std::string insiders = "";
     std::string word = "";
     unsigned char byte;
@@ -82,7 +110,8 @@ int main(int argc, char *argv[]) {
     int bit_i = 0;
     std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file\n";
     enable(true);
-    while (true) { 
+    while (true) {
+        std::cout << iteration << '/' << show_all(insiders) << std::endl;
         out_of_the_bounds(insiders[index]);
         iteration++;
         key = _getch();
