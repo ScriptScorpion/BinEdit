@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <cstring>
+#include <string>
 #include <filesystem>
 #include <fstream>
 #include <list>
@@ -72,6 +73,32 @@ std::string remove_special_chars(const std::string name) {
     }
     return name_copy;
 }
+void reverse_str(std::string &input) {
+    std::string output {};
+    for (int i = (static_cast<int>(input.length())) - 1; i >= 0; --i) {
+        output.push_back(input[i]);
+    }
+    input = output;
+}
+
+template <int N = 0>
+std::string showbits(const unsigned char character) {
+    unsigned short n_ascii = static_cast<unsigned short>(character);
+    std::string result {};
+    while (n_ascii > 0) {
+        result += (n_ascii & 1) + '0';
+        n_ascii >>= 1; 
+    }
+    if (result.length() > N) {
+        std::cerr << "\nError: invalid symbol detected\n";
+        std::exit(1);
+    }
+    reverse_str(result);
+    while(result.length() < N) {
+        result = "0" + result;
+    }
+    return result;
+}
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -90,13 +117,7 @@ int main(int argc, char *argv[]) {
         std::cout << std::endl;
         return 0;
     }
-
-    std::ifstream file(argv[1], std::ios::binary);
-    if (!file.good()) {
-        std::cerr << "Error: file don't exists" << std::endl;
-        return 1;
-    }
-
+    
     std::filesystem::path file_ext1(argv[0]);
     std::filesystem::path file_ext2(argv[1]);
     if (remove_special_chars(file_ext1.replace_extension("").string()) == remove_special_chars(file_ext2.replace_extension("").string())) {
@@ -104,14 +125,20 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    std::ifstream file(argv[1], std::ios::binary);
+    if (!file.good()) {
+        std::cerr << "Error: file don't exists" << std::endl;
+        return 1;
+    }
+
     std::string word {};
     std::list <std::string> all_values;
     unsigned char byte;
     while (file.read(reinterpret_cast<char*>(&byte), 1)) {
-        std::bitset <8> bits(byte);
-        all_values.push_back(bits.to_string());
+        all_values.push_back(showbits<8>(byte));
     }
     file.close();
+
     std::list<std::string>::iterator index {all_values.begin()}; 
     bool edit {false};
     bool running {true};
