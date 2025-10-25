@@ -1,10 +1,15 @@
 #include <iostream>
 #include <cstdlib>
 #include <cctype>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <list>
+#include <algorithm>
 #include <bitset>
 #include <sstream>
+#include "key_map.h"
+
 #ifdef _WIN32
     #include <conio.h>
     #include <windows.h>
@@ -43,31 +48,19 @@
     }
 #endif
 
-void out_of_the_bounds(const char val) {
-    if (val == '\0') {
+void out_of_the_bounds(const std::list<std::string>::iterator val, const std::list <std::string> all_vals) {
+    if (val == all_vals.end()) {
         enable(false);
         std::exit(0);
     }
 }
-void write_to_file(std::string &insiders, const char *filename) {
+void write_to_file(const std::list <std::string> all_vals, const char *filename) {
     std::ofstream output(filename, std::ios::binary);
-    std::istringstream iss(insiders);
-    std::string byte_str;
-    while (iss >> byte_str) {
-        std::bitset<8> bits(byte_str);
-        unsigned char byte = static_cast<unsigned char>(bits.to_ulong());
+    for (const std::string &s : all_vals) {
+        unsigned char byte = static_cast<unsigned char>(std::stoi(s, nullptr, 2));
         output.write(reinterpret_cast<char*>(&byte), sizeof(byte));
     }
     output.close();
-}
-unsigned int show_all(const std::string arg) {
-    unsigned int counter = 0;
-    for (const char c : arg) {
-        if (c == ' ') {
-            counter++;
-        }
-    }
-    return counter;
 }
 std::string remove_special_chars(const std::string name) {
     std::string name_copy;
@@ -79,124 +72,133 @@ std::string remove_special_chars(const std::string name) {
     }
     return name_copy;
 }
+
 int main(int argc, char *argv[]) {
-    std::ifstream file(argv[1], std::ios::binary);
-    if (argc != 2 || !file.good()) {
-        std::cerr << "Only 2 arguments, example: " << argv[0] << " <file>" << std::endl;
+    if (argc != 2) {
+        std::cerr << "Only 2 arguments are possible " << "(type <" << argv[0] << " -h> for more help)" << std::endl;
         return 1;
     }
+    if (strcmp(argv[1], "-h") == 0) {
+        std::cout << "Usage: " << argv[0] << " <FILE>\n\n";
+        std::cout << "Keybindings: \n\n";
+        std::cout << "    a - list all and exit\n";
+        std::cout << "    b - go backward\n";
+        std::cout << "    e - edit current line\n";
+        std::cout << "    q - exit from the program\n";
+        std::cout << "    s - go forward\n";
+        std::cout << "    w - write to the file\n";
+        std::cout << std::endl;
+        return 0;
+    }
+
+    std::ifstream file(argv[1], std::ios::binary);
+    if (!file.good()) {
+        std::cerr << "Error: file don't exists" << std::endl;
+        return 1;
+    }
+
     std::filesystem::path file_ext1(argv[0]);
     std::filesystem::path file_ext2(argv[1]);
-    if (remove_special_chars(file_ext1.replace_extension("").string()) == file_ext2.string()) {
+    if (remove_special_chars(file_ext1.replace_extension("").string()) == remove_special_chars(file_ext2.replace_extension("").string())) {
         std::cerr << "Error: incorrect input file" << std::endl;
         return 1;
     }
 
-    std::string insiders = "";
-    std::string word = "";
+    std::string word {};
+    std::list <std::string> all_values;
     unsigned char byte;
     while (file.read(reinterpret_cast<char*>(&byte), 1)) {
         std::bitset <8> bits(byte);
-        insiders += bits.to_string();
-        insiders += " ";
+        all_values.push_back(bits.to_string());
     }
     file.close();
-    int index = 0;
-    int index_tmp = 0;
-    bool edit = false;
-    bool is_first = true;
-    int key = 0;
-    int iteration = 0;
-    int bit_i = 0;
-    std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file\n";
+    std::list<std::string>::iterator index {all_values.begin()}; 
+    bool edit {false};
+    bool running {true};
+    int key {0};
+    unsigned int pos {1};
+    uint8_t inline_index {0};
     enable(true);
-    while (true) {
-        std::cout << iteration << '/' << show_all(insiders) << std::endl;
-        out_of_the_bounds(insiders[index]);
-        iteration++;
+    std::cout << pos << '/' << all_values.size() << '\n';
+    while (running) {
+        out_of_the_bounds(index, all_values);
+        if (!edit) {
+            std::cout << "Current value: " << *index << " " << static_cast<char>(std::stoi(*index, nullptr, 2)) << '\n';
+        }
+
         key = _getch();
+
         if (edit) {
             std::cout << "Entered bits: ";
             std::cout << (char)key;
-            if ((key == 48 || key == 49) && insiders[index] != ' ') {
-                insiders[index] = (char)key;
-                word[bit_i] = (char)key;
-                index++;
-                bit_i++;
+            if ((key == Keys::zero || key == Keys::one) && inline_index < word.size()) {
+                word[inline_index] = static_cast<char>(key);
                 std::cout << '\n' << word << " " << static_cast<char>(std::stoi(word, nullptr, 2)) << '\n';
+                ++inline_index;
             }
             else {
+                if (word != (*index))  {
+                    std::replace(all_values.begin(), all_values.end(), *index, word);
+                }
                 std::cout << "\n\nEditing finished\n";
-                std::cout << "press 's' to see a bits, press 'e' to edit this bits, press 'a' to see all values at once, press 'w' to write edited values in the file" << std::endl;
                 edit = false;
-                word = "";
-                bit_i = 0;
+                inline_index = 0;
+                word.clear();
             }
+            continue;
         }
         else {
-            if (key == 115) { // s
-                if (iteration == 2) {
-                    is_first = false;
-                }
-                word = "";
-                while (insiders[index] != ' ') {
-                    std::cout << insiders[index];
-                    word += insiders[index];
-                    index++;
-                }
-                std::cout << ' ' << static_cast<char>(std::stoi(word, nullptr, 2)) << std::endl;
-                index++;
-            }
-            else if (key == 101) { // e
-                edit = true;
-                word = ""; 
-                std::cout << " \nEntered editing mode\n";
-                std::cout << "(Press 1 or 0 to edit bits)\n\n";
-                if (is_first) {
-                    is_first = false;
-                    index_tmp = 0;
-                    while (insiders[index_tmp] != ' ') {
-                        word += insiders[index_tmp];
-                        index_tmp++;
+            switch(key) {
+                case Keys::s: {
+                    if (pos < all_values.size()) {
+                        ++pos;
+                        ++index;
+                        std::cout << pos << '/' << all_values.size() << '\n';
                     }
-                    std::cout << "Current value: " << word << '\n';
-                    continue;
+                    break;
                 }
-                else {
-                    index -= 2;
-                    while (insiders[index] != ' ') {
-                        index--;
+
+                case Keys::b: {
+                    if (pos > 1) {
+                        --pos;
+                        --index;
+                        std::cout << pos << '/' << all_values.size() << '\n';
                     }
-                    index++;
-                    index_tmp = index;
-                    while (insiders[index_tmp] != ' ') {
-                        word += insiders[index_tmp];
-                        index_tmp++;
-                    }
-                    std::cout << "Current value: " << word << '\n';
-                    continue;
+                    break;
                 }
-            }
-            else if (key == 97) { // a
-                for (char x : insiders) {
-                    if (isspace(x)) {
-                        std::cout << " ";
-                    }
-                    else {
-                        std::cout << x;
-                    }
+
+                case Keys::e: { 
+                    edit = true;
+                    word = (*index);
+                    std::cout << " \nEntered editing mode\n";
+                    std::cout << "(Press 1 or 0 to edit bits)\n\n";
+                    break;
                 }
-                std::cout << std::endl;
-                break;
-            }
-            else if (key == 119) { // w
-                write_to_file(insiders, argv[1]);
-                std::cout << "File overwrited successfully" << std::endl;
-                break;
-            }
-            else {
-                std::cout << "\nInvalid command\n";
-                break;
+
+                case Keys::w: {
+                    write_to_file(all_values, argv[1]);
+                    std::cout << "File overwrited successfully" << std::endl;
+                    running = false;
+                    break;
+                }
+
+                case Keys::q: {
+                    running = false;
+                    break;
+                }
+                case Keys::a: { 
+                    for (const std::string &s : all_values) {
+                        std::cout << s << " ";
+                    }
+                    std::cout << std::endl;
+                    running = false;
+                    break;
+                }
+                
+                default: {
+                    std::cout << "\nInvalid command\n";
+                    break;
+                }
             }
         }
     }
