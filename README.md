@@ -1,4 +1,8 @@
-# How compile:
+# Requirements
+  * `g++`
+  * `cmake`
+
+# Installation:
 
 * `mkdir build`, `cd build`, `cmake ..`, `cmake --build .`
 * Or to delete all build files except executable: `mkdir build`, `cd build`, `cmake ..`, `cmake --build . --target clear`
